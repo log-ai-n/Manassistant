@@ -11,7 +11,7 @@ server.tool(
   {
     location: z.string().describe('The location to get weather for'),
   },
-  async ({ location }) => {
+  async ({ location }: { location: string }) => {
     // This is a mock implementation
     return `Weather forecast for ${location}: Sunny with a high of 75°F`;
   }

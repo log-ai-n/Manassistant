@@ -4,7 +4,7 @@
 
 # Configure environment variable replacement in the build
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "18.14.0"
   
 # Disable processing for asset files
 [build.processing]
@@ -38,3 +38,9 @@
 
 [[plugins]]
 package = "@netlify/plugin-functions-core"
+
+# Explicitly specify the Node.js version using Netlify's recommended approach
+[[plugins]]
+  package = "netlify-plugin-node-version"
+  [plugins.inputs]
+    nodeVersion = "18.x"
