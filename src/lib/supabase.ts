@@ -28,33 +28,61 @@ export const initializeSupabase = async (): Promise<void> => {
   try {
     // Always fetch configuration from the serverless function, regardless of environment
     // This prevents leaking secrets to the client bundle
-    const response = await fetch('/.netlify/functions/config');
-    if (!response.ok) {
-      throw new Error('Failed to fetch configuration');
+    
+    // For Node.js environment in development, use environment variables directly
+    if (process.env.NODE_ENV !== 'production') {
+      supabaseUrl = process.env.SERVER_SUPABASE_URL || 'https://api.manassistant.com';
+      supabaseAnonKey = process.env.SERVER_SUPABASE_ANON_KEY || '';
+      
+      // Update the supabase client with environment values
+      Object.assign(supabase, createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+        },
+        realtime: {
+          params: {
+            eventsPerSecond: 10,
+          },
+        },
+      }));
+      
+      console.log('Supabase client initialized with environment variables');
+      return;
     }
     
-    const config = await response.json();
-    supabaseUrl = config.supabaseUrl;
-    supabaseAnonKey = config.supabaseAnonKey;
-
-    // Update the supabase client with real values
-    Object.assign(supabase, createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10,
+    // In browser/production environment, fetch from the serverless function
+    try {
+      const response = await fetch('/.netlify/functions/config');
+      if (!response.ok) {
+        throw new Error('Failed to fetch configuration');
+      }
+      
+      const config = await response.json();
+      supabaseUrl = config.supabaseUrl;
+      supabaseAnonKey = config.supabaseAnonKey;
+      
+      // Update the supabase client with real values
+      Object.assign(supabase, createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
         },
-      },
-    }));
-    
-    console.log('Supabase client initialized successfully');
+        realtime: {
+          params: {
+            eventsPerSecond: 10,
+          },
+        },
+      }));
+      
+      console.log('Supabase client initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize Supabase client:', error);
+      // Continue with placeholder values, which will cause auth to fail
+      // This is better than exposing real credentials in the client bundle
+    }
   } catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-    // Continue with placeholder values, which will cause auth to fail
-    // This is better than exposing real credentials in the client bundle
+    console.error('Error initializing Supabase:', error);
   }
 };
 
