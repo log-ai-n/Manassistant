@@ -1,393 +1,604 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRestaurant } from '../contexts/RestaurantContext';
-import { PlusCircle, Store, RefreshCw, Eye, X } from 'lucide-react';
+import { 
+  PieChart, 
+  Store, 
+  ArrowUpRight, 
+  Clock, 
+  Users, 
+  DollarSign, 
+  HelpCircle,
+  X,
+  ChevronRight,
+  Bell,
+  Star,
+  ArrowRight,
+  Calendar,
+  Clipboard
+} from 'lucide-react';
 import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
 
-const StaffViewPreview: React.FC<{ restaurant: any; onClose: () => void }> = ({ restaurant, onClose }) => {
-  const { features } = useRestaurant();
+// Tooltip for progressive onboarding
+const OnboardingTooltip = ({ 
+  id, 
+  title, 
+  content, 
+  position = 'right', 
+  onDismiss, 
+  active 
+}: { 
+  id: string; 
+  title: string; 
+  content: string;
+  position?: 'top' | 'right' | 'bottom' | 'left';
+  onDismiss: () => void;
+  active: boolean;
+}) => {
+  if (!active) return null;
 
-  const featureIcons = {
-    allergenie: <Store className="h-12 w-12 mb-3" />,
-    review_hub: <Store className="h-12 w-12 mb-3" />,
-    foh_chatbot: <Store className="h-12 w-12 mb-3" />,
-    boh_chatbot: <Store className="h-12 w-12 mb-3" />,
-    store_logai: <Store className="h-12 w-12 mb-3" />,
-    guest_simulator: <Store className="h-12 w-12 mb-3" />,
+  const positionClasses = {
+    top: "bottom-full left-1/2 transform -translate-x-1/2 mb-2",
+    right: "left-full top-1/2 transform -translate-y-1/2 ml-2",
+    bottom: "top-full left-1/2 transform -translate-x-1/2 mt-2",
+    left: "right-full top-1/2 transform -translate-y-1/2 mr-2",
   };
 
-  const featureNames = {
-    allergenie: 'Allergenie',
-    review_hub: 'Review Hub',
-    foh_chatbot: 'FOH Chatbot',
-    boh_chatbot: 'BOH Chatbot',
-    store_logai: 'Store LogAI',
-    guest_simulator: 'Guest Simulator',
-  };
-
-  const featureDescriptions = {
-    allergenie: 'Menu and allergen management system',
-    review_hub: 'Customer feedback analysis',
-    foh_chatbot: 'Guest service assistant',
-    boh_chatbot: 'Kitchen assistance',
-    store_logai: 'Smart store logging',
-    guest_simulator: 'Staff training simulator',
+  const arrowClasses = {
+    top: "top-full left-1/2 transform -translate-x-1/2 border-t-2 border-l-2",
+    right: "right-full top-1/2 transform -translate-y-1/2 border-r-2 border-t-2",
+    bottom: "bottom-full left-1/2 transform -translate-x-1/2 border-b-2 border-r-2",
+    left: "left-full top-1/2 transform -translate-y-1/2 border-l-2 border-b-2",
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-4xl h-[80vh] rounded-lg shadow-xl flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{restaurant.name}</h2>
-            <p className="text-sm text-gray-500">Staff Interface Preview</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            <X className="h-6 w-6 text-gray-500" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Object.entries(featureNames).map(([key, name]) => {
-              const isEnabled = features.some(f => f.feature_key === key && f.is_enabled);
-              
-              return (
-                <div
-                  key={key}
-                  className={clsx(
-                    'relative bg-white rounded-lg shadow-md p-6 text-center transition-all',
-                    isEnabled 
-                      ? 'hover:shadow-lg cursor-pointer' 
-                      : 'opacity-50 cursor-not-allowed'
-                  )}
-                >
-                  <div className="flex justify-center">
-                    {featureIcons[key as keyof typeof featureIcons]}
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">{name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {featureDescriptions[key as keyof typeof featureDescriptions]}
-                  </p>
-                  {!isEnabled && (
-                    <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center">
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                        Coming Soon
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+    <div 
+      className={clsx(
+        "absolute z-50 bg-white border border-blue-100 rounded-lg shadow-lg p-3 w-64",
+        positionClasses[position]
+      )}
+      data-tour-id={id}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="font-medium text-gray-900">{title}</h4>
+        <button 
+          onClick={onDismiss}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X size={16} />
+        </button>
       </div>
+      <p className="text-sm text-gray-600">{content}</p>
+      <div 
+        className={clsx(
+          "absolute w-3 h-3 bg-white transform rotate-45",
+          arrowClasses[position]
+        )}
+      ></div>
     </div>
   );
 };
 
+// Stat Card component for key metrics
+const StatCard = ({ 
+  title, 
+  value, 
+  change, 
+  icon, 
+  tooltip,
+  onboardingId,
+  isOnboardingActive
+}: { 
+  title: string; 
+  value: string; 
+  change: { value: number; label: string }; 
+  icon: React.ReactNode;
+  tooltip?: string;
+  onboardingId?: string;
+  isOnboardingActive?: boolean;
+}) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const changeColor = change.value > 0 ? 'text-green-600' : 'text-red-600';
+  
+  return (
+    <div className="relative bg-white rounded-lg shadow-sm p-6 transition-all hover:shadow-md">
+      {tooltip && (
+        <button 
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <HelpCircle size={16} />
+          {showTooltip && (
+            <div className="absolute right-0 top-full mt-1 bg-gray-800 text-white text-xs rounded py-1 px-2 min-w-[200px] z-10">
+              {tooltip}
+            </div>
+          )}
+        </button>
+      )}
+      
+      <div className="flex items-center">
+        <div className="p-2 rounded-md bg-blue-50 text-blue-600 mr-4">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+          <p className="text-2xl font-semibold mt-1">{value}</p>
+        </div>
+      </div>
+      
+      <div className="mt-4 flex items-center">
+        <span className={clsx("text-sm font-medium", changeColor)}>
+          {change.value > 0 ? '+' : ''}{change.value}%
+        </span>
+        <span className="text-xs text-gray-500 ml-1.5">{change.label}</span>
+      </div>
+
+      {onboardingId && isOnboardingActive && (
+        <OnboardingTooltip
+          id={onboardingId}
+          title={`Track ${title}`}
+          content={`This card shows you the current ${title.toLowerCase()} and how it's changed recently.`}
+          position="bottom"
+          onDismiss={() => {}} // This would be handled by the parent component
+          active={isOnboardingActive}
+        />
+      )}
+    </div>
+  );
+};
+
+// Action Card component for quick actions
+const ActionCard = ({ 
+  title, 
+  description, 
+  icon, 
+  onClick,
+  primary = false
+}: { 
+  title: string; 
+  description: string; 
+  icon: React.ReactNode;
+  onClick: () => void;
+  primary?: boolean;
+}) => (
+  <div 
+    className={clsx(
+      "bg-white rounded-lg shadow-sm p-6 cursor-pointer transition-all hover:shadow-md",
+      primary && "border-l-4 border-blue-500"
+    )}
+    onClick={onClick}
+  >
+    <div className="flex items-start">
+      <div className="p-2 rounded-md bg-blue-50 text-blue-600 mr-4 flex-shrink-0">
+        {icon}
+      </div>
+      <div className="flex-1">
+        <h3 className="text-lg font-medium">{title}</h3>
+        <p className="text-sm text-gray-500 mt-1">{description}</p>
+      </div>
+      <div className="text-blue-600 flex-shrink-0">
+        <ArrowRight size={20} />
+      </div>
+    </div>
+  </div>
+);
+
+// Notification component
+const Notification = ({ 
+  title, 
+  time, 
+  read = false, 
+  onClick 
+}: { 
+  title: string; 
+  time: string; 
+  read?: boolean; 
+  onClick: () => void;
+}) => (
+  <div 
+    className={clsx(
+      "px-4 py-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors",
+      !read && "bg-blue-50 hover:bg-blue-100"
+    )}
+    onClick={onClick}
+  >
+    <div className="flex justify-between">
+      <div className="flex items-start">
+        <div className={clsx(
+          "w-2 h-2 rounded-full mt-1.5 mr-2 flex-shrink-0", 
+          read ? "bg-gray-300" : "bg-blue-500"
+        )} />
+        <div>
+          <p className={clsx(
+            "text-sm", 
+            read ? "text-gray-600" : "text-gray-900 font-medium"
+          )}>
+            {title}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">{time}</p>
+        </div>
+      </div>
+      <ChevronRight size={16} className="text-gray-400 mt-1" />
+    </div>
+  </div>
+);
+
+// Task component
+const Task = ({ 
+  title, 
+  completed = false, 
+  onClick 
+}: { 
+  title: string; 
+  completed?: boolean; 
+  onClick: () => void;
+}) => (
+  <div 
+    className="px-4 py-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors"
+    onClick={onClick}
+  >
+    <div className="flex items-center">
+      <div className={clsx(
+        "w-5 h-5 rounded-full border flex items-center justify-center mr-3 flex-shrink-0",
+        completed ? "bg-green-500 border-green-500" : "border-gray-300"
+      )}>
+        {completed && <div className="w-2 h-2 bg-white rounded-full" />}
+      </div>
+      <p className={clsx(
+        "text-sm",
+        completed ? "text-gray-500 line-through" : "text-gray-900"
+      )}>
+        {title}
+      </p>
+    </div>
+  </div>
+);
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { 
-    currentRestaurant, 
-    userRestaurants, 
-    createRestaurant, 
-    setCurrentRestaurant,
-    loading,
-    error: restaurantError,
-    refreshRestaurants
-  } = useRestaurant();
+  const { currentRestaurant, userRestaurants, features } = useRestaurant();
   const navigate = useNavigate();
   
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newRestaurantName, setNewRestaurantName] = useState('');
-  const [newRestaurantAddress, setNewRestaurantAddress] = useState('');
-  const [newRestaurantPhone, setNewRestaurantPhone] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [previewRestaurant, setPreviewRestaurant] = useState<any | null>(null);
+  // State for onboarding
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  
+  // Dummy data for demonstration
+  const stats = [
+    { 
+      title: 'Average Orders', 
+      value: '94', 
+      change: { value: 12, label: 'vs last week' }, 
+      icon: <Clipboard size={20} />,
+      tooltip: 'The average number of orders received per day',
+      onboardingId: 'orders-stat'
+    },
+    { 
+      title: 'Revenue', 
+      value: '$3,249', 
+      change: { value: 8, label: 'vs last week' }, 
+      icon: <DollarSign size={20} />,
+      tooltip: 'Total revenue generated this week'
+    },
+    { 
+      title: 'Customers', 
+      value: '481', 
+      change: { value: 3, label: 'vs last week' }, 
+      icon: <Users size={20} />,
+      tooltip: 'Total unique customers served this week'
+    },
+    { 
+      title: 'Avg. Serving Time', 
+      value: '18min', 
+      change: { value: -5, label: 'vs last week' }, 
+      icon: <Clock size={20} />,
+      tooltip: 'Average time between order and service completion'
+    },
+  ];
+  
+  const notifications = [
+    { id: 1, title: 'New review received (4.5★)', time: '10 minutes ago', read: false },
+    { id: 2, title: 'Staff schedule updated for tomorrow', time: '1 hour ago', read: false },
+    { id: 3, title: 'Inventory alert: Low stock on rice', time: '3 hours ago', read: true },
+    { id: 4, title: 'New feature available: Guest Simulator', time: '1 day ago', read: true },
+  ];
+  
+  const tasks = [
+    { id: 1, title: 'Review staff schedule for the weekend', completed: false },
+    { id: 2, title: 'Update menu items with seasonal offerings', completed: false },
+    { id: 3, title: 'Respond to customer feedback', completed: true },
+    { id: 4, title: 'Check inventory levels', completed: true },
+  ];
 
-  const handleRestaurantClick = (restaurant: any, e: React.MouseEvent) => {
-    // Prevent click when clicking the preview button
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) {
-      return;
-    }
-
-    setCurrentRestaurant(restaurant);
-    navigate('/restaurant/settings');
+  // Handle dismissing the onboarding steps
+  const dismissOnboarding = () => {
+    setShowOnboarding(false);
+    // In a real app, we would save this preference to user settings
   };
 
-  const handleCreateRestaurant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRestaurantName.trim()) {
-      setError('Restaurant name is required');
-      return;
-    }
-
-    setIsCreating(true);
-    setError(null);
-
-    try {
-      const { error, data } = await createRestaurant(
-        newRestaurantName,
-        newRestaurantAddress,
-        newRestaurantPhone
-      );
-
-      if (error) {
-        setError(error.message);
-      } else if (data) {
-        setNewRestaurantName('');
-        setNewRestaurantAddress('');
-        setNewRestaurantPhone('');
-        setShowCreateForm(false);
-        setCurrentRestaurant(data);
-      }
-    } catch (err) {
-      setError('An unexpected error occurred');
-      console.error(err);
-    } finally {
-      setIsCreating(false);
+  const moveToNextOnboardingStep = () => {
+    setOnboardingStep(prev => prev + 1);
+    // If we've reached the end of onboarding, dismiss it
+    if (onboardingStep >= 2) {
+      dismissOnboarding();
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshRestaurants();
-    } finally {
-      setIsRefreshing(false);
-    }
+  // Handle navigation to a specific feature
+  const navigateToFeature = (featureKey: string) => {
+    navigate(`/features/${featureKey}`);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  
+  // Check if user is new (would be from backend in real app)
+  const isNewUser = user && new Date(user.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   return (
-    <div>
-      <div className="mb-8 flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Welcome section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.email}</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Welcome back, {user?.firstName || 'Restaurant Manager'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Here's what's happening at {currentRestaurant?.name || 'your restaurant'} today.
+          </p>
         </div>
-        <button 
-          onClick={handleRefresh} 
-          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          disabled={isRefreshing}
-        >
-          <RefreshCw className={clsx('mr-1 h-4 w-4', isRefreshing && 'animate-spin')} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
+        
+        <div className="mt-4 md:mt-0 flex space-x-3 relative">
+          <button
+            onClick={() => navigate('/restaurant/settings')}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Restaurant Settings
+          </button>
+          
+          <button
+            onClick={() => {}} // Would open insights/reports
+            className="px-4 py-2 bg-blue-600 rounded-md text-sm font-medium text-white hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            View Reports
+          </button>
+          
+          {/* Welcome onboarding tooltip */}
+          {showOnboarding && onboardingStep === 0 && (
+            <OnboardingTooltip
+              id="welcome-onboarding"
+              title="Welcome to Manassist Hub!"
+              content="This is your restaurant dashboard. We'll show you around the main features."
+              position="bottom"
+              onDismiss={moveToNextOnboardingStep}
+              active={true}
+            />
+          )}
+        </div>
       </div>
-
-      {restaurantError && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{restaurantError}</p>
-              <p className="mt-2 text-xs text-red-700">
-                Try refreshing the page or checking your network connection.
-              </p>
+      
+      {/* Key stats section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+        {stats.map((stat, index) => (
+          <StatCard
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            change={stat.change}
+            icon={stat.icon}
+            tooltip={stat.tooltip}
+            onboardingId={stat.onboardingId}
+            isOnboardingActive={showOnboarding && onboardingStep === 1 && index === 0}
+          />
+        ))}
+        
+        {/* Stats onboarding tooltip */}
+        {showOnboarding && onboardingStep === 1 && (
+          <div className="absolute bottom-full left-0 mb-2">
+            <button
+              onClick={moveToNextOnboardingStep}
+              className="px-4 py-2 bg-blue-600 rounded-md text-sm font-medium text-white shadow-md hover:bg-blue-700"
+            >
+              Next: Explore Features
+            </button>
+          </div>
+        )}
+      </div>
+      
+      {/* Content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Featured actions */}
+        <div className="lg:col-span-2 space-y-6">
+          <h2 className="text-lg font-medium text-gray-900">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+            <ActionCard
+              title="Update Menu"
+              description="Add new items or edit existing ones"
+              icon={<Clipboard size={20} />}
+              onClick={() => navigateToFeature('allergenie')}
+              primary={true}
+            />
+            
+            <ActionCard
+              title="Review Analytics"
+              description="Get insights into your restaurant's performance"
+              icon={<PieChart size={20} />}
+              onClick={() => {}} // Would navigate to analytics
+            />
+            
+            <ActionCard
+              title="Manage Staff"
+              description="Schedule and assign roles to your team"
+              icon={<Users size={20} />}
+              onClick={() => navigate('/team')}
+            />
+            
+            <ActionCard
+              title="Customer Feedback"
+              description="View and respond to recent reviews"
+              icon={<Star size={20} />}
+              onClick={() => navigateToFeature('review_hub')}
+            />
+            
+            {/* Features onboarding tooltip */}
+            {showOnboarding && onboardingStep === 2 && (
+              <OnboardingTooltip
+                id="features-onboarding"
+                title="Quick Access to Features"
+                content="Access your most-used features directly from these action cards."
+                position="right"
+                onDismiss={dismissOnboarding}
+                active={true}
+              />
+            )}
+          </div>
+          
+          {/* Recent activity */}
+          <h2 className="text-lg font-medium text-gray-900 pt-2">Recent Activity</h2>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+              <h3 className="font-medium text-gray-700">Recent Activity</h3>
+              <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
+                View All <ChevronRight size={16} className="ml-1" />
+              </button>
+            </div>
+            
+            <div className="divide-y divide-gray-100">
+              {/* Sample activities would go here */}
+              <div className="p-4 flex items-start">
+                <div className="bg-blue-100 p-2 rounded-full text-blue-600 mr-3">
+                  <Calendar size={16} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-900">Menu updated with seasonal items</p>
+                  <p className="text-xs text-gray-500 mt-1">Today at 2:45 PM by John</p>
+                </div>
+              </div>
+              
+              <div className="p-4 flex items-start">
+                <div className="bg-green-100 p-2 rounded-full text-green-600 mr-3">
+                  <Users size={16} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-900">Staff schedule confirmed for next week</p>
+                  <p className="text-xs text-gray-500 mt-1">Today at 11:30 AM by Sarah</p>
+                </div>
+              </div>
+              
+              <div className="p-4 flex items-start">
+                <div className="bg-purple-100 p-2 rounded-full text-purple-600 mr-3">
+                  <Star size={16} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-900">New 5-star review received</p>
+                  <p className="text-xs text-gray-500 mt-1">Yesterday at 8:15 PM</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      )}
-
-      {userRestaurants.length === 0 ? (
-        <div className="bg-white shadow rounded-lg p-6 text-center">
-          <Store className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-lg font-medium text-gray-900">
-            {restaurantError ? 'Could not load restaurants' : 'No restaurants yet'}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            {restaurantError 
-              ? 'There was a problem loading your restaurants. You can try refreshing or creating a new restaurant.'
-              : 'Get started by creating your first restaurant.'}
-          </p>
-          <div className="mt-6 flex justify-center space-x-4">
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create Restaurant
-            </button>
-            {restaurantError && (
-              <button
-                onClick={handleRefresh}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={clsx('mr-2 h-5 w-5', isRefreshing && 'animate-spin')} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
+        
+        {/* Sidebar with notifications and tasks */}
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Your Restaurants</h2>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <PlusCircle className="mr-1 h-4 w-4" />
-              Add New
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {userRestaurants.map((restaurant) => (
-              <div
-                key={restaurant.id}
-                className={clsx(
-                  'bg-white shadow rounded-lg p-6 cursor-pointer transition-all hover:shadow-md',
-                  currentRestaurant?.id === restaurant.id && 'ring-2 ring-blue-500'
-                )}
-                onClick={(e) => handleRestaurantClick(restaurant, e)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{restaurant.name}</h3>
-                    {restaurant.address && (
-                      <p className="mt-1 text-sm text-gray-500">{restaurant.address}</p>
-                    )}
-                    {restaurant.phone && (
-                      <p className="mt-1 text-sm text-gray-500">{restaurant.phone}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPreviewRestaurant(restaurant);
-                    }}
-                    className="p-1 hover:bg-gray-100 rounded-full"
-                    title="Preview Staff Interface"
-                  >
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  </button>
-                </div>
-                <div className="mt-4 flex items-center">
-                  <span
-                    className={clsx(
-                      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      restaurant.active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    )}
-                  >
-                    {restaurant.active ? 'Active' : 'Inactive'}
-                  </span>
-                  {restaurant.restaurant_code && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      ID: {restaurant.restaurant_code}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Create Restaurant Form */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Create New Restaurant</h2>
+          {/* Notifications */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+              <h3 className="font-medium text-gray-700 flex items-center">
+                Notifications
+                <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  {notifications.filter(n => !n.read).length}
+                </span>
+              </h3>
+              <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                Mark all read
+              </button>
+            </div>
             
-            {error && (
-              <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div>
+              {notifications.slice(0, 4).map(notification => (
+                <Notification
+                  key={notification.id}
+                  title={notification.title}
+                  time={notification.time}
+                  read={notification.read}
+                  onClick={() => {}} // Would mark as read and show details
+                />
+              ))}
+            </div>
             
-            <form onSubmit={handleCreateRestaurant}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Restaurant Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={newRestaurantName}
-                    onChange={(e) => setNewRestaurantName(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Address
-                  </label>
-                  <input
-                    type="text"
-                    id="address"
-                    value={newRestaurantAddress}
-                    onChange={(e) => setNewRestaurantAddress(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    id="phone"
-                    value={newRestaurantPhone}
-                    onChange={(e) => setNewRestaurantPhone(e.target.value)}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div className="mt-5 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateForm(false)}
-                  className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {isCreating ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </form>
+            <div className="p-3 bg-gray-50 border-t text-center">
+              <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                View all notifications
+              </button>
+            </div>
           </div>
+          
+          {/* Tasks */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+              <h3 className="font-medium text-gray-700">Tasks</h3>
+              <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                Add new
+              </button>
+            </div>
+            
+            <div>
+              {tasks.map(task => (
+                <Task
+                  key={task.id}
+                  title={task.title}
+                  completed={task.completed}
+                  onClick={() => {}} // Would toggle completion
+                />
+              ))}
+            </div>
+            
+            <div className="p-3 bg-gray-50 border-t text-center">
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div 
+                  className="bg-blue-600 h-1.5 rounded-full" 
+                  style={{ width: `${(tasks.filter(t => t.completed).length / tasks.length) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {tasks.filter(t => t.completed).length} of {tasks.length} tasks completed
+              </p>
+            </div>
+          </div>
+          
+          {/* Getting Started (for new users) */}
+          {isNewUser && (
+            <div className="bg-blue-50 rounded-lg p-5 border border-blue-100">
+              <h3 className="font-medium text-blue-800 flex items-center">
+                <HelpCircle size={18} className="mr-2" />
+                Getting Started
+              </h3>
+              <p className="text-sm text-blue-700 mt-2">
+                Complete these steps to set up your restaurant:
+              </p>
+              <ul className="mt-3 space-y-2">
+                <li className="flex items-center text-sm text-blue-700">
+                  <div className="w-5 h-5 rounded-full border border-blue-300 flex items-center justify-center mr-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  </div>
+                  Complete your restaurant profile
+                </li>
+                <li className="flex items-center text-sm text-blue-700">
+                  <div className="w-5 h-5 rounded-full border border-blue-300 flex items-center justify-center mr-2"></div>
+                  Upload your menu
+                </li>
+                <li className="flex items-center text-sm text-blue-700">
+                  <div className="w-5 h-5 rounded-full border border-blue-300 flex items-center justify-center mr-2"></div>
+                  Invite your staff
+                </li>
+              </ul>
+              <button className="mt-4 w-full py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                Continue Setup
+              </button>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Staff View Preview Modal */}
-      {previewRestaurant && (
-        <StaffViewPreview
-          restaurant={previewRestaurant}
-          onClose={() => setPreviewRestaurant(null)}
-        />
-      )}
+      </div>
     </div>
   );
 };

@@ -40,6 +40,13 @@ const featureMetadata: Record<string, {
     category: 'foh',
     status: 'coming_soon'
   },
+  billing: {
+    name: 'Billing System',
+    description: 'Create and manage customer bills and invoices with detailed line items',
+    category: 'foh',
+    status: 'active',
+    defaultEnabled: true
+  },
 
   // Back of House Features
   boh_chatbot: {

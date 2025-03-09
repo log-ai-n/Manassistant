@@ -1,0 +1,43 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+Manassist Development & Deployment Branching Guidelines
+To maintain consistency and organization across all development workflows, the following rules apply unless explicitly stated otherwise:
+
+1. Branching Strategy
+Main Branch (main):
+
+The production-ready branch.
+Only stable, tested code should be merged here.
+Direct commits are not allowed; only merges from develop.
+Development Branch (develop):
+
+The integration branch for staging new features.
+All feature branches should be merged here before going to main.
+This branch should always remain deployable.
+Feature Branches (feature/*):
+
+Each new feature or bug fix should be developed in its own branch.
+Naming convention: feature/{short-description} (e.g., feature/login-system).
+Must be merged into develop before deployment.
+2. Deployment Environments
+Local:
+
+Developers should test new changes in their local environment before pushing.
+Branches are synced to local databases before merging.
+Staging:
+
+Code from develop is deployed here for testing.
+Used for integration testing, bug fixes, and approval before production.
+Production (prod):
+
+Only main branch gets deployed to production.
+No direct deployments; must go through develop and staging first.
+3. Merge Rules
+Feature branches should be reviewed and tested before merging into develop.
+No direct commits to main or develop—all changes should come from approved pull requests.
+Staging should always reflect the latest stable develop state before moving to production.
+This structured approach ensures a clear path from feature development to production deployment, minimizing risks and maintaining stability. 🚀

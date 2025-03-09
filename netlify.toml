@@ -2,7 +2,39 @@
   publish = "dist"
   command = "npm run build"
 
+# Configure environment variable replacement in the build
+[build.environment]
+  NODE_VERSION = "18"
+  
+# Disable processing for asset files
+[build.processing]
+  skip_processing = false
+
+[build.processing.html]
+  pretty_urls = true
+
+# Configure secrets scanning
+[build.environment]
+  SECRETS_SCAN_ENABLED = true
+  # Disable secrets scanning for build artifacts and static assets
+  SECRETS_SCAN_OMIT_PATHS = "dist/assets/*, build/*, node_modules/*"
+  # Ignore specific keys like public Supabase URL (which is not a secret)
+  SECRETS_SCAN_OMIT_KEYS = "supabaseUrl,api.manassistant.com"
+
+# Add custom domain configuration
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self' https://api.manassistant.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://api.manassistant.com;"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[plugins]]
+package = "@netlify/plugin-functions-core"

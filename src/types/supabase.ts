@@ -246,6 +246,78 @@ export interface Database {
           }
         ]
       }
+      activities: {
+        Row: {
+          id: string;
+          created_at: string;
+          user_id: string;
+          action: string;
+          details: Record<string, any>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          user_id: string;
+          action: string;
+          details: Record<string, any>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          user_id?: string;
+          action?: string;
+          details?: Record<string, any>;
+        };
+      },
+      memories: {
+        Row: {
+          id: string;
+          restaurant_id: string;
+          memory_content: string;
+          created_at: string;
+          updated_at: string;
+          user_id: string | null;
+          context: string | null;
+          importance: number;
+          last_accessed: string | null;
+        };
+        Insert: {
+          id?: string;
+          restaurant_id: string;
+          memory_content: string;
+          created_at?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          context?: string | null;
+          importance?: number;
+          last_accessed?: string | null;
+        };
+        Update: {
+          id?: string;
+          restaurant_id?: string;
+          memory_content?: string;
+          created_at?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          context?: string | null;
+          importance?: number;
+          last_accessed?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "memories_restaurant_id_fkey";
+            columns: ["restaurant_id"];
+            referencedRelation: "restaurants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "memories_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      }
     }
     Views: {
       [_ in never]: never
