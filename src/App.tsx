@@ -18,6 +18,7 @@ import MemoryTester from './components/MemoryTester';
 import Auth0Tester from './components/Auth0Tester';
 import SpeedInsightsAdmin from './components/SpeedInsightsAdmin';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import LandingPage from './pages/LandingPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -43,6 +44,9 @@ function App() {
       <AuthProvider>
         <RestaurantProvider>
           <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            
             {/* Auth routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
