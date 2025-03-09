@@ -19,6 +19,7 @@ import Auth0Tester from './components/Auth0Tester';
 import SpeedInsightsAdmin from './components/SpeedInsightsAdmin';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import LandingPage from './pages/LandingPage';
+import MemoryDemonstrator from './components/MemoryDemonstrator';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -58,6 +59,7 @@ function App() {
               <Route path="/test/memories" element={<MemoryTester />} />
               <Route path="/test/auth0" element={<Auth0Tester />} />
               <Route path="/admin/performance" element={<SpeedInsightsAdmin />} />
+              <Route path="/demo/memory" element={<MemoryDemonstrator />} />
               {/* Add other feature routes here */}
             </Route>
 
