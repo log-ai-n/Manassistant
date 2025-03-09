@@ -1,0 +1,46 @@
+---
+description: All Project Rules
+globs: 
+alwaysApply: true
+---
+A. Tech Stack
+   - Python 3.10 only
+   - PostgreSQL (no JSON/NoSQL)
+   - Plain HTML + vanilla JS front end
+
+B. Architecture
+   - Maintain the current folder structure
+   - Single entry point: main.py
+   - Don’t touch .env without permission
+
+C. Coding Style
+   - Keep functions under ~60 lines
+   - Avoid files over ~400 lines
+   - PEP 8 standards + docstrings
+
+D. Testing
+   - Use pytest for every new feature
+   - No stubbed/mocked data in production
+   - Fix existing code/tests before adding new patterns
+
+E. Deployment
+   - Must pass tests before deployment
+   - Don’t alter the hosting setup unless asked
+   - No big refactors of CI/CD flows without a reason
+
+F. Safety & Cleanup
+   - No duplicated logic—extend existing code
+   - Delete any “temporary” scripts when done
+   - Never commit real secrets to version control
+
+G. Packages & Dependencies
+   - No new library overlap with existing ones
+   - No removal/replacement of libraries unless absolutely necessary
+
+H. Summaries
+   - Summarize major changes after each commit
+   - Provide a quick “how to test” for big features
+
+I. Error & Edge Cases
+   - Handle bad inputs/timeouts gracefully
+   - Log or raise meaningful exceptions (don’t silently swallow errors)

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useRestaurant } from '../contexts/RestaurantContext';
 import { getRecentMemories, Memory } from '../services/memoryService';
 import { processConversationForMemories, getRelevantMemories } from '../lib/agent-system/memory-processor';
+import { generateChatCompletion, enhanceResponseWithMemories } from '../lib/deepseek-client';
+import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL } from '../lib/environment';
 
 interface Message {
   id: string;
@@ -18,6 +20,7 @@ const MemoryDemonstrator: React.FC = () => {
   const [relevantMemories, setRelevantMemories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingMemory, setProcessingMemory] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
 
   useEffect(() => {
     if (!currentRestaurant?.id) return;
@@ -31,29 +34,44 @@ const MemoryDemonstrator: React.FC = () => {
   }, [currentRestaurant]);
 
   const generateAssistantResponse = async (userMessage: string): Promise<string> => {
-    // In a real application, this would call an AI service
-    // For demonstration, we're using hardcoded responses with memory integration
-    
-    // Simulate AI processing time
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (userMessage.toLowerCase().includes('allergy') || userMessage.toLowerCase().includes('allergic')) {
-      return `I've noted that information about allergies. I'll make sure the kitchen is informed about this whenever you visit our restaurant.`;
+    try {
+      // Build conversation history for context
+      const chatHistory = [
+        {
+          role: 'system' as const,
+          content: `You are an AI assistant for ${currentRestaurant?.name || 'our restaurant'}. 
+          Be friendly, helpful, and conversational. Provide specific information when asked about menu items, 
+          hours, or services. Keep responses brief and focused on helping the customer.`
+        },
+        // Add last 5 messages from history for context
+        ...conversationHistory.slice(-5)
+      ];
+      
+      // Generate base response from DeepSeek
+      const baseResponse = await generateChatCompletion({
+        messages: [...chatHistory, { role: 'user', content: userMessage }]
+      });
+      
+      // If we have relevant memories, enhance the response
+      if (relevantMemories.length > 0) {
+        return await enhanceResponseWithMemories(baseResponse, relevantMemories);
+      }
+      
+      return baseResponse;
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      
+      // Fallback responses if API fails
+      if (userMessage.toLowerCase().includes('allergy') || userMessage.toLowerCase().includes('allergic')) {
+        return `I've noted your allergy information. We'll make sure the kitchen is informed about this whenever you visit.`;
+      }
+      
+      if (userMessage.toLowerCase().includes('birthday') || userMessage.toLowerCase().includes('anniversary')) {
+        return `Thank you for sharing about your special day! We'll make sure to help you celebrate when the time comes.`;
+      }
+      
+      return `Thanks for your message. I'm having some trouble connecting right now, but I'll be sure to help you when I'm back online.`;
     }
-    
-    if (userMessage.toLowerCase().includes('birthday') || userMessage.toLowerCase().includes('anniversary')) {
-      return `Thanks for sharing about your special day! I've made a note of that, and we'll make sure to help you celebrate when the time comes.`;
-    }
-    
-    if (userMessage.toLowerCase().includes('favorite') || userMessage.toLowerCase().includes('prefer')) {
-      return `I appreciate you sharing your preferences. I've stored this information so we can better serve you in the future.`;
-    }
-    
-    if (relevantMemories.length > 0) {
-      return `Based on what I remember about your preferences: "${relevantMemories[0]}" - would you like me to make any recommendations?`;
-    }
-    
-    return `Thanks for your message. Is there anything specific about our restaurant you'd like to know?`;
   };
 
   const handleSubmitMessage = async (e: React.FormEvent) => {
@@ -70,10 +88,14 @@ const MemoryDemonstrator: React.FC = () => {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    
+    // Update conversation history
+    setConversationHistory(prev => [...prev, { role: 'user', content: inputMessage }]);
+    
     setInputMessage('');
     setLoading(true);
     
-    // Get relevant memories for this conversation
+    // Process for getting relevant memories
     const memories = await getRelevantMemories(
       currentRestaurant.id,
       inputMessage,
@@ -93,6 +115,10 @@ const MemoryDemonstrator: React.FC = () => {
     };
     
     setMessages(prev => [...prev, assistantMessage]);
+    
+    // Update conversation history with assistant response
+    setConversationHistory(prev => [...prev, { role: 'assistant', content: response }]);
+    
     setLoading(false);
     
     // Process for new memories (in background)
@@ -112,7 +138,7 @@ const MemoryDemonstrator: React.FC = () => {
     <div className="bg-white rounded-lg shadow-md p-6 mx-auto max-w-4xl">
       <h2 className="text-xl font-bold mb-4">AI Memory System Demo</h2>
       <p className="text-sm text-gray-500 mb-6">
-        This demonstrates how the AI remembers important details from conversations.
+        This demonstrates how the AI remembers important details from conversations using DeepSeek.
         Try mentioning allergies, preferences, or special occasions in your messages.
       </p>
       
@@ -207,6 +233,16 @@ const MemoryDemonstrator: React.FC = () => {
               </ul>
             </div>
           )}
+          
+          <div className="border rounded-lg p-4 mt-4 bg-blue-50">
+            <h3 className="font-medium mb-2">DeepSeek Status</h3>
+            <p className="text-sm text-gray-700">
+              Using model: {DEEPSEEK_MODEL}
+            </p>
+            <p className="text-sm text-gray-700">
+              API Status: {DEEPSEEK_API_KEY ? 'Connected' : 'Not Connected'}
+            </p>
+          </div>
         </div>
       </div>
     </div>

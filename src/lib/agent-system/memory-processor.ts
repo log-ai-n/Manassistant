@@ -1,4 +1,5 @@
 import { createMemory, getMemories } from '../../services/memoryService';
+import { extractImportantInformation } from '../deepseek-client';
 
 interface ConversationData {
   restaurantId: string;
@@ -8,7 +9,7 @@ interface ConversationData {
 }
 
 /**
- * Processes conversation data to extract potential memories
+ * Processes conversation data to extract potential memories using AI
  * @param data The conversation data to process
  * @returns The IDs of any created memories
  */
@@ -17,44 +18,41 @@ export async function processConversationForMemories(data: ConversationData): Pr
   const createdMemories: string[] = [];
 
   try {
-    // Simple heuristic - looking for key phrases that might indicate useful information
-    // In a production system, this would use a more sophisticated NLP approach
-    const memoryIndicators = [
-      { pattern: /prefer|like|favorite|enjoy/i, importance: 3 },
-      { pattern: /allerg(y|ic|ies)|intoleran(t|ce)/i, importance: 5 },
-      { pattern: /birthday|anniversary|celebration/i, importance: 4 },
-      { pattern: /dislike|hate|don't like/i, importance: 3 },
-      { pattern: /special|request|specific/i, importance: 3 }
-    ];
-
-    for (const indicator of memoryIndicators) {
-      if (indicator.pattern.test(userMessage)) {
-        // Extract the relevant sentence containing the indicator
-        const sentences = userMessage.split(/[.!?]+/);
-        const relevantSentences = sentences.filter(s => indicator.pattern.test(s));
+    // Use DeepSeek AI to extract important information
+    const extractedInfo = await extractImportantInformation(userMessage);
+    
+    // Process each extracted piece of information
+    for (const info of extractedInfo) {
+      if (info.trim()) {
+        // Determine importance based on content (basic heuristic)
+        let importance = 2; // Default importance
         
-        if (relevantSentences.length > 0) {
-          const memoryContent = relevantSentences.join('. ').trim() + '.';
-          
-          // Check if a similar memory already exists
-          const existingMemories = await getMemories({
+        if (/allerg(y|ic|ies)|intoleran(t|ce)/i.test(info)) {
+          importance = 5; // Highest importance for allergies
+        } else if (/birthday|anniversary|celebration/i.test(info)) {
+          importance = 4; // High importance for special occasions
+        } else if (/prefer|like|favorite|enjoy/i.test(info)) {
+          importance = 3; // Medium-high for preferences
+        }
+        
+        // Check if a similar memory already exists
+        const existingMemories = await getMemories({
+          restaurant_id: restaurantId,
+          query: info.substring(0, 20) // Search by start of content
+        });
+        
+        // Only create if not too similar to existing memories
+        if (!existingMemories.some(m => isSimilarContent(m.memory_content, info))) {
+          const memory = await createMemory({
             restaurant_id: restaurantId,
-            query: memoryContent.substring(0, 20) // Search by start of content
+            memory_content: info,
+            importance: importance,
+            context: context || 'conversation',
+            user_id: userId
           });
           
-          // Only create if not too similar to existing memories
-          if (!existingMemories.some(m => isSimilarContent(m.memory_content, memoryContent))) {
-            const memory = await createMemory({
-              restaurant_id: restaurantId,
-              memory_content: memoryContent,
-              importance: indicator.importance,
-              context: context || 'conversation',
-              user_id: userId
-            });
-            
-            if (memory) {
-              createdMemories.push(memory.id);
-            }
+          if (memory) {
+            createdMemories.push(memory.id);
           }
         }
       }
@@ -79,13 +77,29 @@ export async function getRelevantMemories(
   context?: string
 ): Promise<string[]> {
   try {
-    // Get memories relevant to the current conversation
-    const memories = await getMemories({
+    // Extract keywords for better memory matching
+    const keywords = extractKeywords(query);
+    
+    // First try exact keyword matching
+    let memories = await getMemories({
       restaurant_id: restaurantId,
-      query: extractKeywords(query).join(' '),
+      query: keywords.join(' '),
       context: context,
       limit: 5
     });
+    
+    // If no results with keywords, try semantic matching with the full query
+    if (memories.length === 0) {
+      memories = await getMemories({
+        restaurant_id: restaurantId,
+        query: query.substring(0, 50), // Use first 50 chars for matching
+        context: context,
+        limit: 5
+      });
+    }
+    
+    // Sort memories by importance before returning
+    memories.sort((a, b) => b.importance - a.importance);
     
     // Format memories for inclusion in context
     return memories.map(m => m.memory_content);

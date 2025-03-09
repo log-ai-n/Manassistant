@@ -10,9 +10,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["node", "react", "react-dom"]
   },
   "include": ["src/**/*"]
 }
